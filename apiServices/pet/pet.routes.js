@@ -37,7 +37,6 @@ router.use(validateSession);
 
 router.post(
   "/savewithimage",
-  protecAdmin,
   upload.array("image", 3),
   createPetValidators,
   validateResult,
