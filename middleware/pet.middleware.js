@@ -1,5 +1,6 @@
 //Models
 const { Pet } = require("../apiServices/pet/pet.model");
+const { User } = require("../apiServices/auth/user.model");
 
 //Utils
 const { catchAsync } = require("../util/catchAsync");
@@ -11,6 +12,11 @@ exports.petExist = catchAsync(async (req, res, next) => {
   const pet = await Pet.findOne({
     where: { status: "active", id },
     //incluir la ubication del usuario
+    include: {
+      model: User,
+      as: "ubicacion",
+      attributes: ["country", "city"],
+    },
   });
 
   if (!pet) {

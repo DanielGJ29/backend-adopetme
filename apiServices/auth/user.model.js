@@ -1,6 +1,8 @@
 const { DataTypes } = require("sequelize");
 const { sequelize } = require("../../util/database");
 
+const { Pet } = require("../../apiServices/pet/pet.model");
+
 const User = sequelize.define("user", {
   id: {
     primaryKey: true,
@@ -50,5 +52,9 @@ const User = sequelize.define("user", {
     defaultValue: "active",
   },
 });
+
+// Definir la asociación
+User.hasMany(Pet, { foreignKey: "createdBy" });
+Pet.belongsTo(User, { foreignKey: "createdBy", as: "ubicacion" });
 
 module.exports = { User };

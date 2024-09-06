@@ -7,6 +7,7 @@ const { ref, uploadBytes, getDownloadURL } = require("firebase/storage");
 
 //Models
 const { Pet } = require("./pet.model.js");
+const { User } = require("../../apiServices/auth/user.model.js");
 
 //util
 const { catchAsync } = require("../../util/catchAsync.js");
@@ -107,6 +108,11 @@ exports.createPet = catchAsync(async (req, res, next) => {
 exports.getAllPets = catchAsync(async (req, res) => {
   const pets = await Pet.findAll({
     where: { status: "active" },
+    include: {
+      model: User,
+      as: "ubicacion",
+      attributes: ["country", "city"],
+    },
   });
 
   const petsPromises = pets.map(
@@ -118,6 +124,7 @@ exports.getAllPets = catchAsync(async (req, res) => {
       gender,
       createdBy,
       longevity,
+      ubicacion,
       image,
     }) => {
       //converte json to Array img
@@ -140,9 +147,10 @@ exports.getAllPets = catchAsync(async (req, res) => {
         name,
         age,
         description,
-        genderUpperCase,
+        gender,
         createdBy,
         longevity,
+        ubicacion,
         image: urlsArray,
       };
     }
