@@ -133,14 +133,14 @@ exports.getAllPets = catchAsync(async (req, res) => {
         await Promise.all(promiseUrl);
       }
 
-      console.log("urls", urlsArray);
+      let genderUpperCase = gender.toUpperCase();
 
       return {
         id,
         name,
         age,
         description,
-        gender,
+        genderUpperCase,
         createdBy,
         longevity,
         image: urlsArray,

@@ -10,6 +10,7 @@ exports.petExist = catchAsync(async (req, res, next) => {
 
   const pet = await Pet.findOne({
     where: { status: "active", id },
+    //incluir la ubication del usuario
   });
 
   if (!pet) {
