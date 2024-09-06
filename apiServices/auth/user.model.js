@@ -36,6 +36,10 @@ const User = sequelize.define("user", {
     type: DataTypes.STRING(100),
     allowNull: true,
   },
+  country: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
+  },
   rol: {
     type: DataTypes.STRING(100),
     allowNull: false,

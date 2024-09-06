@@ -58,11 +58,11 @@ exports.createPetValidators = [
     .withMessage("Name must by a string")
     .notEmpty()
     .withMessage("Must provide a valid name"),
-  body("age")
-    .isNumeric()
-    .withMessage("age must by a number")
-    .notEmpty()
-    .withMessage("age provide a valid age"),
+  // body("age")
+  //   .isNumeric()
+  //   .withMessage("age must by a number")
+  //   .notEmpty()
+  //   .withMessage("age provide a valid age"),
   // body("longevity")
   //   .isString()
   //   .withMessage("Longevity must by a string")

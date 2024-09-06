@@ -26,9 +26,10 @@ dotenv.config({ path: "./config.env" });
 //?NEW PET
 exports.createPet = catchAsync(async (req, res, next) => {
   const { name, age, description, gender, createdBy, longevity } = req.body;
+  const user = req.currentUser;
 
   const petExist = await Pet.findOne({
-    where: { status: "active", name },
+    where: { status: "active", name, createdBy: user.id },
   });
 
   if (petExist) {
