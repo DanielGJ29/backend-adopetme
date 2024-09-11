@@ -1,5 +1,6 @@
 const { DataTypes } = require("sequelize");
 const { sequelize } = require("../../util/database");
+const { PetImage } = require("../image/petImage.model");
 
 const Pet = sequelize.define("pet", {
   id: {
@@ -14,7 +15,7 @@ const Pet = sequelize.define("pet", {
   },
   age: {
     type: DataTypes.INTEGER,
-    allowNull: false,
+    allowNull: true,
   },
   longevity: {
     type: DataTypes.STRING(100),
@@ -33,20 +34,24 @@ const Pet = sequelize.define("pet", {
     type: DataTypes.INTEGER,
     allowNull: true,
   },
+  idSpecies: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
   createdBy: {
     type: DataTypes.INTEGER,
     allowNull: false,
   },
 
-  image: {
-    type: DataTypes.JSON,
-    allowNull: false,
-  },
   status: {
     type: DataTypes.STRING(10),
     allowNull: false,
     defaultValue: "active",
   },
 });
+
+// Definir la asociación
+Pet.hasMany(PetImage, { foreignKey: "petId", as: "images" });
+PetImage.belongsTo(Pet, { foreignKey: "petId", as: "pet" });
 
 module.exports = { Pet };

@@ -78,6 +78,11 @@ exports.createPetValidators = [
     .withMessage("gender must by a string")
     .notEmpty()
     .withMessage("gender provide a valid gender"),
+  body("idSpecies")
+    .isNumeric()
+    .withMessage("idSpecies must by a number")
+    .notEmpty()
+    .withMessage("idSpecies provide a valid number IdSpecies"),
   body("createdBy")
     .isNumeric()
     .withMessage("createdBy must by a number")

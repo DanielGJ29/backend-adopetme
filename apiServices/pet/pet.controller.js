@@ -21,12 +21,17 @@ const {
 const { getUrl } = require("../../util/dowloadUrl.js");
 
 const { Sequelize } = require("sequelize");
+const { Json } = require("sequelize/lib/utils");
+const { PetImage } = require("../image/petImage.model.js");
+const { Species } = require("../species/species.model.js");
 
 dotenv.config({ path: "./config.env" });
 
 //?NEW PET
 exports.createPet = catchAsync(async (req, res, next) => {
-  const { name, age, description, gender, createdBy, longevity } = req.body;
+  const { name, age, description, gender, longevity } = req.body;
+  const createdBy = Number(req.body.createdBy);
+  const idSpecies = Number(req.body.idSpecies);
   const user = req.currentUser;
 
   const petExist = await Pet.findOne({
@@ -39,8 +44,8 @@ exports.createPet = catchAsync(async (req, res, next) => {
     );
   }
 
-  const PathsJson = {};
-  const UrlsJson = {};
+  const arrayPath = [];
+  const arrayUrl = [];
   if (req.files.length > 0) {
     const filePromise = req.files.map(async (file, index) => {
       //******************************** */
@@ -71,10 +76,8 @@ exports.createPet = catchAsync(async (req, res, next) => {
       //DowloanImg
       imgDownloadUrl = await getDownloadURL(imgRef);
 
-      //arrayPath.push({ image: resultUploadBytes.metadata.fullPath });
-      PathsJson[`image${index + 1}`] = resultUploadBytes.metadata.fullPath;
-      //arrayUrl.push(imgDownloadUrl);
-      UrlsJson[`image${index + 1}`] = imgDownloadUrl;
+      arrayPath.push({ image: resultUploadBytes.metadata.fullPath });
+      arrayUrl.push(imgDownloadUrl);
 
       return resultUploadBytes;
     });
@@ -82,21 +85,37 @@ exports.createPet = catchAsync(async (req, res, next) => {
     await Promise.all(filePromise);
   }
 
-  //converte json to Array img
-  arrayPath = Object.values(PathsJson);
-  arrayUrl = Object.values(UrlsJson);
+  const pet = await Pet.create(
+    {
+      name,
+      age,
+      description,
+      gender,
+      createdBy,
+      longevity,
+      idSpecies,
+      images: arrayPath,
+    },
+    {
+      include: [
+        {
+          model: PetImage,
+          as: "images",
+          attributes: { exclude: ["createdAt", "updatedAt"] },
+        },
+      ],
+    }
+  );
 
-  const pet = await Pet.create({
-    name,
-    age,
-    description,
-    gender,
-    createdBy,
-    longevity,
-    image: PathsJson,
-  });
+  const paths = [];
 
-  pet.image = arrayUrl;
+  await Promise.all(
+    pet.images.map(async (img) => {
+      paths.push({ petId: img.petId, image: await getUrl(img.image) });
+    })
+  );
+
+  pet.images = paths;
 
   res.status(200).json({
     status: "success",
@@ -108,11 +127,24 @@ exports.createPet = catchAsync(async (req, res, next) => {
 exports.getAllPets = catchAsync(async (req, res) => {
   const pets = await Pet.findAll({
     where: { status: "active" },
-    include: {
-      model: User,
-      as: "ubicacion",
-      attributes: ["country", "city"],
-    },
+    include: [
+      {
+        model: User,
+        as: "ubicacion",
+        attributes: ["country", "city"],
+      },
+      {
+        model: PetImage,
+        as: "images",
+        attributes: ["id", "image"],
+      },
+      {
+        model: Species,
+        as: "specie",
+        attributes: ["idSpecies", "name"],
+      },
+    ],
+    exclude: ["idSpecies"],
   });
 
   const petsPromises = pets.map(
@@ -125,16 +157,15 @@ exports.getAllPets = catchAsync(async (req, res) => {
       createdBy,
       longevity,
       ubicacion,
-      image,
+      idSpecies,
+      specie,
+      images,
     }) => {
-      //converte json to Array img
-      arrayPath = Object.values(image);
-
       let urlsArray = [];
-      if (arrayPath.length > 0) {
-        const promiseUrl = arrayPath.map(async (path) => {
-          url = await getUrl(path);
-          urlsArray.push(url);
+      if (images.length > 0) {
+        const promiseUrl = images.map(async (path) => {
+          url = await getUrl(path.image);
+          urlsArray.push({ id: path.id, image: url });
         });
 
         await Promise.all(promiseUrl);
@@ -151,7 +182,9 @@ exports.getAllPets = catchAsync(async (req, res) => {
         createdBy,
         longevity,
         ubicacion,
-        image: urlsArray,
+        idSpecies,
+        specie,
+        images: urlsArray,
       };
     }
   );
@@ -169,72 +202,49 @@ exports.getPetById = catchAsync(async (req, res, next) => {
   const { pet } = req;
 
   //converte json to Array img
-  arrayPath = Object.values(pet.image);
+  //arrayPath = Object.values(pet.image);
+  //console.log("pet.images", pet.images);
 
   const arrayUrls = [];
-  if (arrayPath.length > 0) {
-    const promiseUrl = arrayPath.map(async (path) => {
-      url = await getUrl(path);
-      arrayUrls.push(url);
-    });
+  if (pet.images.length > 0) {
+    await Promise.all(
+      pet.images.map(async (path) => {
+        url = await getUrl(path.image);
 
-    await Promise.all(promiseUrl);
+        arrayUrls.push({ id: path.id, image: url });
+      })
+    );
+
+    //await Promise.all(promiseUrl);
   }
 
-  pet.image = arrayUrls;
+  console.log(arrayUrls);
+  const petWithUrl = {
+    id: pet.id,
+    name: pet.name,
+    age: pet.age,
+    longevity: pet.longevity,
+    description: pet.description,
+    gender: pet.gender,
+    size: pet.size,
+    createdBy: pet.createdBy,
+    createdAt: pet.createdAt,
+    updatedAt: pet.updatedAt,
+    ubicacion: pet.ubicacion,
+    //idSpecies: pet.idSpecies,
+    specie: pet.specie,
+    images: arrayUrls,
+  };
 
   res.status(200).json({
     status: "success",
-    data: pet,
+    data: petWithUrl,
   });
 });
 
 //?UPDATE PET
 exports.updatePet = catchAsync(async (req, res, next) => {
   const { pet } = req;
-
-  //console.log(req.body);
-
-  //const { name, age, description, gender, createdBy, longevity } = pet;
-
-  //Update Imgagen
-  let newUrl = false;
-  let resultUploadBytes;
-  if (req.files.length > 0) {
-    req.files.map((file) => {
-      // console.log(file);
-      // console.log(pet.image);
-      //converte json to Array img
-      arrayPath = Object.values(pet.image);
-      //**************recorremos las path guardados
-      arrayPath.map(async (path) => {
-        const imgRef = ref(storage, path);
-        console.log("imgRef", imgRef.fullPath);
-
-        if (imgRef.fullPath) {
-          console.log("actualizamos");
-          //actualiza avatar si existe una url previamente registrada
-          // const result = await uploadBytes(imgRef, req.file.buffer);
-        } else {
-          console.log("creamos url");
-          //Create new url for the new avatar
-          // const UserId = user.id;
-          // //Upload img to Cloud Storage (Firebase)
-          // const lastIndexExt = req.file.originalname.lastIndexOf(".");
-          // const ext = req.file.originalname.slice(lastIndexExt);
-          // const imgRef = ref(
-          //   storage,
-          //   `adopetme/pets/ID-${UserId}-${Date.now()}-pet.${ext}`
-          // );
-          // resultUploadBytes = await uploadBytes(imgRef, req.file.buffer);
-          // //DowloanImg
-          // const imgDownloadUrl = await getDownloadURL(imgRef);
-        }
-      });
-    });
-
-    //const imgRef = ref(storage, pet.avatarUrl);
-  }
 
   const data = filterObj(
     req.body,
@@ -243,25 +253,111 @@ exports.updatePet = catchAsync(async (req, res, next) => {
     "description",
     "gender",
     "createdBy",
-    "longevity"
+    "longevity",
+    "idSpecies"
   );
 
-  // if (resultUploadBytes) {
-  //   data.avatarUrl = resultUploadBytes.metadata.fullPath;
-  // }
-
-  //await pet.update({ ...data });
+  await pet.update({ ...data });
 
   res.status(200).json({ status: "success" });
 });
 
 //?DELETE PET
-exports.deleteUser = catchAsync(async (req, res, next) => {
-  const { user } = req;
+exports.deletePet = catchAsync(async (req, res, next) => {
+  const { pet } = req;
 
-  user.update({ status: "delete" });
+  pet.update({ status: "delete" });
 
   res.status(200).json({
     status: "success",
+  });
+});
+
+//?SEARCH PET
+exports.searchPet = catchAsync(async (req, res, next) => {
+  //const { pet } = req;
+  //const params = req.params;
+  const param = req.query.param.toLowerCase();
+
+  // if(param !== "perro" || param !== 'gato'){
+  //   return next(
+  //     new AppError(400, `Mascota: ${name} ya se encuentra registrada`)
+  //   );
+  // }
+
+  const id = param === "perro" ? 2 : param === "gato" ? 1 : 0;
+
+  const pets = await Pet.findAll({
+    where: {
+      idSpecies: id,
+    },
+    include: [
+      {
+        model: User,
+        as: "ubicacion",
+        attributes: ["country", "city"],
+      },
+      {
+        model: PetImage,
+        as: "images",
+        attributes: ["id", "image"],
+      },
+      {
+        model: Species,
+        as: "specie",
+        attributes: ["idSpecies", "name"],
+      },
+    ],
+    exclude: ["idSpecies"],
+  });
+
+  //GET URL IMG
+  const petsPromises = pets.map(
+    async ({
+      id,
+      name,
+      age,
+      description,
+      gender,
+      createdBy,
+      longevity,
+      ubicacion,
+      //idSpecies,
+      specie,
+      images,
+    }) => {
+      let urlsArray = [];
+      if (images.length > 0) {
+        const promiseUrl = images.map(async (path) => {
+          url = await getUrl(path.image);
+          urlsArray.push({ id: path.id, image: url });
+        });
+
+        await Promise.all(promiseUrl);
+      }
+
+      let genderUpperCase = gender.toUpperCase();
+
+      return {
+        id,
+        name,
+        age,
+        description,
+        gender,
+        createdBy,
+        longevity,
+        ubicacion,
+        //idSpecies,
+        specie,
+        images: urlsArray,
+      };
+    }
+  );
+
+  const resolvePets = await Promise.all(petsPromises);
+
+  res.status(200).json({
+    status: "success",
+    data: resolvePets,
   });
 });
