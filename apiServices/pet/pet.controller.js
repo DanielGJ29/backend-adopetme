@@ -1,31 +1,17 @@
-const bycryp = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const { promisify } = require("util");
-
-const dotenv = require("dotenv");
 const { ref, uploadBytes, getDownloadURL } = require("firebase/storage");
 
 //Models
 const { Pet } = require("./pet.model.js");
 const { User } = require("../../apiServices/auth/user.model.js");
+const { PetImage } = require("../image/petImage.model.js");
+const { Species } = require("../species/species.model.js");
 
 //util
 const { catchAsync } = require("../../util/catchAsync.js");
 const { AppError } = require("../../util/appError.js");
 const { storage } = require("../../util/firebase.js");
 const { filterObj } = require("../../util/filterObj.js");
-const {
-  generateRefreshToken,
-  generateToken,
-} = require("../../util/tokenManager.js");
 const { getUrl } = require("../../util/dowloadUrl.js");
-
-const { Sequelize } = require("sequelize");
-const { Json } = require("sequelize/lib/utils");
-const { PetImage } = require("../image/petImage.model.js");
-const { Species } = require("../species/species.model.js");
-
-dotenv.config({ path: "./config.env" });
 
 //?NEW PET
 exports.createPet = catchAsync(async (req, res, next) => {

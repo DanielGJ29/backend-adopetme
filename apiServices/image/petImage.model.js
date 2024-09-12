@@ -1,6 +1,6 @@
 const { DataTypes } = require("sequelize");
 const { sequelize } = require("../../util/database");
-const { Pet } = require("../pet/pet.model");
+//const { Pet } = require("../pet/pet.model");
 
 const PetImage = sequelize.define("petImage", {
   id: {
@@ -12,10 +12,10 @@ const PetImage = sequelize.define("petImage", {
 
   petId: {
     type: DataTypes.INTEGER,
-    references: {
-      model: Pet,
-      key: "id",
-    },
+    // references: {
+    //   model: Pet,
+    //   key: "id",
+    // },
   },
 
   image: {
