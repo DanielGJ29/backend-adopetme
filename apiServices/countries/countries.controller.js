@@ -20,7 +20,9 @@ exports.getAllCountries = catchAsync(async (req, res) => {
 exports.getAllStateByCountry = catchAsync(async (req, res) => {
   const { country } = req.params;
 
-  const states = await getallState(country);
+  const newCountry = country.trim();
+
+  const states = await getallState(newCountry);
   res.status(200).json({
     status: "success",
     data: states,

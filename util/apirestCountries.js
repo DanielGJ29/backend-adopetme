@@ -26,8 +26,7 @@ const authToken = async () => {
 };
 
 const getallCountries = async () => {
-  const auth_token = process.env.AUTH_TOKEN;
-
+  const auth_token = await authToken();
   const myHeaders = new Headers();
   myHeaders.append("Authorization", `Bearer ${auth_token}`);
 
@@ -50,7 +49,7 @@ const getallCountries = async () => {
 };
 
 const getallState = async (country) => {
-  const auth_token = process.env.AUTH_TOKEN;
+  const auth_token = await authToken();
 
   const myHeaders = new Headers();
   myHeaders.append("Authorization", `Bearer ${auth_token}`);
@@ -74,7 +73,7 @@ const getallState = async (country) => {
 };
 
 const getallCities = async (city) => {
-  const auth_token = process.env.AUTH_TOKEN;
+  const auth_token = await authToken();
 
   const myHeaders = new Headers();
   myHeaders.append("Authorization", `Bearer ${auth_token}`);
