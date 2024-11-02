@@ -38,6 +38,10 @@ const User = sequelize.define("user", {
     type: DataTypes.STRING(100),
     allowNull: true,
   },
+  state: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
+  },
   country: {
     type: DataTypes.STRING(100),
     allowNull: true,
